@@ -12,9 +12,22 @@ from hpat.str_arr_ext import StringArray
 from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
                             count_parfor_OneDs, count_array_OneDs, dist_IR_contains,
                             get_start_end)
+import os
+
+from .gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
 
 
 class TestHiFrames(unittest.TestCase):
+
+    EXAMPLE_PARQUET = os.path.join(GENERATED_DATA_PATH, 'example.parquet')
+
+    @classmethod
+    def setUpClass(cls):
+        ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(cls.EXAMPLE_PARQUET)
 
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
@@ -255,9 +268,11 @@ class TestHiFrames(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_nunique_parallel(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         # TODO: test without file
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             return df.four.nunique()
 
         hpat_func = hpat.jit(test_impl)
@@ -285,9 +300,11 @@ class TestHiFrames(unittest.TestCase):
     @unittest.skip('AssertionError - fix needed\n'
                    '5 != 3\n')
     def test_nunique_str_parallel(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         # TODO: test without file
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             return df.two.nunique()
 
         hpat_func = hpat.jit(test_impl)
@@ -311,9 +328,11 @@ class TestHiFrames(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_unique_parallel(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         # TODO: test without file
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             return (df.four.unique() == 3.0).sum()
 
         hpat_func = hpat.jit(test_impl)
@@ -332,9 +351,11 @@ class TestHiFrames(unittest.TestCase):
     @unittest.skip('AssertionError - fix needed\n'
                    '2 != 1\n')
     def test_unique_str_parallel(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         # TODO: test without file
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             return (df.two.unique() == 'foo').sum()
 
         hpat_func = hpat.jit(test_impl)
@@ -719,9 +740,11 @@ class TestHiFrames(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_concat_str(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         def test_impl():
-            df1 = pq.read_table('example.parquet').to_pandas()
-            df2 = pq.read_table('example.parquet').to_pandas()
+            df1 = pq.read_table(example_pq).to_pandas()
+            df2 = pq.read_table(example_pq).to_pandas()
             A3 = pd.concat([df1, df2])
             return (A3.two=='foo').sum()
 
@@ -750,9 +773,11 @@ class TestHiFrames(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_concat_series_str(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         def test_impl():
-            df1 = pq.read_table('example.parquet').to_pandas()
-            df2 = pq.read_table('example.parquet').to_pandas()
+            df1 = pq.read_table(example_pq).to_pandas()
+            df2 = pq.read_table(example_pq).to_pandas()
             A3 = pd.concat([df1.two, df2.two])
             return (A3=='foo').sum()
 

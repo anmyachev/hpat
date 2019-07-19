@@ -11,9 +11,24 @@ from hpat.str_arr_ext import StringArray
 from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
                             count_parfor_OneDs, count_array_OneDs, dist_IR_contains,
                             get_start_end)
+import os
+from .gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
 
 
 class TestJoin(unittest.TestCase):
+
+    ASOF1_PARQUET = os.path.join(GENERATED_DATA_PATH, 'asof1.pq')
+    ASOF2_PARQUET = os.path.join(GENERATED_DATA_PATH, 'asof2.pq')
+
+    @classmethod
+    def setUpClass(cls):
+        ParquetGenerator.gen_asof1_parquet(cls.ASOF1_PARQUET)
+        ParquetGenerator.gen_asof2_parquet(cls.ASOF2_PARQUET)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(cls.ASOF1_PARQUET)
+        os.remove(cls.ASOF2_PARQUET)
 
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build') 
@@ -225,9 +240,12 @@ class TestJoin(unittest.TestCase):
     @unittest.skip('ValueError - fix needed\n'
                    'Failed in hpat mode pipeline (step: typed dataframe pass)\n')
     def test_merge_asof_parallel1(self):
+        asof1_pq = self.ASOF1_PARQUET
+        asof2_pq = self.ASOF2_PARQUET
+
         def test_impl():
-            df1 = pd.read_parquet('asof1.pq')
-            df2 = pd.read_parquet('asof2.pq')
+            df1 = pd.read_parquet(asof1_pq)
+            df2 = pd.read_parquet(asof2_pq)
             df3 = pd.merge_asof(df1, df2, on='time')
             return (df3.A.sum(), df3.time.max(), df3.B.sum())
 

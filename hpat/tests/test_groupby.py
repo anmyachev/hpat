@@ -7,6 +7,8 @@ import hpat
 from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
                             count_parfor_OneDs, count_array_OneDs, dist_IR_contains,
                             get_start_end)
+import os
+from .gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
 
 
 _pivot_df1 = pd.DataFrame({"A": ["foo", "foo", "foo", "foo", "foo",
@@ -20,6 +22,20 @@ _pivot_df1 = pd.DataFrame({"A": ["foo", "foo", "foo", "foo", "foo",
 
 
 class TestGroupBy(unittest.TestCase):
+
+    GROUPBY3_PARQUET = os.path.join(GENERATED_DATA_PATH, 'groupby3.parquet')
+    PIVOT2_PARQUET = os.path.join(GENERATED_DATA_PATH, 'pivot2.parquet')
+
+    @classmethod
+    def setUpClass(cls):
+        ParquetGenerator.gen_groupby_parquet(cls.GROUPBY3_PARQUET)
+        ParquetGenerator.gen_pivot2_parquet(cls.PIVOT2_PARQUET)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(cls.GROUPBY3_PARQUET)
+        os.remove(cls.PIVOT2_PARQUET)
+
     def test_agg_seq(self):
         def test_impl(df):
             A = df.groupby('A')['B'].agg(lambda x: x.max()-x.min())
@@ -271,8 +287,10 @@ class TestGroupBy(unittest.TestCase):
     @unittest.skip('AssertionError - fix needed\n'
                    '16 != 20\n')
     def test_agg_parallel_str(self):
+        groupby3_pq = self.GROUPBY3_PARQUET
+
         def test_impl():
-            df = pq.read_table("groupby3.pq").to_pandas()
+            df = pq.read_table(groupby3_pq).to_pandas()
             A = df.groupby('A')['B'].agg(lambda x: x.max()-x.min())
             return A.sum()
 
@@ -359,8 +377,10 @@ class TestGroupBy(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pivot_parallel(self):
+        pivot2_pq = self.PIVOT2_PARQUET
+
         def test_impl():
-            df = pd.read_parquet("pivot2.pq")
+            df = pd.read_parquet(pivot2_pq)
             pt = df.pivot_table(index='A', columns='C', values='D', aggfunc='sum')
             res = pt.small.values.sum()
             return res
@@ -383,8 +403,10 @@ class TestGroupBy(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_crosstab_parallel1(self):
+        pivot2_pq = self.PIVOT2_PARQUET
+
         def test_impl():
-            df = pd.read_parquet("pivot2.pq")
+            df = pd.read_parquet(pivot2_pq)
             pt = pd.crosstab(df.A, df.C)
             res = pt.small.values.sum()
             return res

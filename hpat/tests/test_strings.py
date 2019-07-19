@@ -10,10 +10,26 @@ import re
 import pyarrow.parquet as pq
 from hpat.str_arr_ext import StringArray
 from hpat.str_ext import unicode_to_std_str, std_str_to_unicode
+<<<<<<< HEAD
 from hpat.tests.gen_test_data import ParquetGenerator
+=======
+import os
+from .gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+>>>>>>> generated data for unittesting in 'hpat/tests/generated_data' folder now
 
 
 class TestString(unittest.TestCase):
+
+    EXAMPLE_PARQUET = os.path.join(GENERATED_DATA_PATH, 'example.parquet')
+
+    @classmethod
+    def setUpClass(cls):
+        ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(cls.EXAMPLE_PARQUET)
+
     def test_pass_return(self):
         def test_impl(_str):
             return _str
@@ -193,11 +209,10 @@ class TestString(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_string_NA_box(self):
-        # create `example.parquet` file
-        ParquetGenerator.gen_pq_test()
+        example_pq = self.EXAMPLE_PARQUET
 
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             return df.five
         hpat_func = hpat.jit(test_impl)
 

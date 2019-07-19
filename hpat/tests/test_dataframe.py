@@ -9,7 +9,13 @@ import hpat
 from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
     count_parfor_OneDs, count_array_OneDs, dist_IR_contains, get_start_end)
 
+<<<<<<< HEAD
 from hpat.tests.gen_test_data import ParquetGenerator
+=======
+import os
+
+from .gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+>>>>>>> generated data for unittesting in 'hpat/tests/generated_data' folder now
 
 
 @hpat.jit
@@ -20,7 +26,19 @@ def inner_get_column(df):
 
 COL_IND = 0
 
+
 class TestDataFrame(unittest.TestCase):
+
+    KDE_PARQUET = os.path.join(GENERATED_DATA_PATH, 'kde.parquet')
+
+    @classmethod
+    def setUpClass(cls):
+        ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(cls.KDE_PARQUET)
+
 
     @unittest.skip('Error - fix needed\n')
     def test_create1(self):
@@ -582,12 +600,11 @@ class TestDataFrame(unittest.TestCase):
         self.assertTrue((hpat_func(df) == sorted_df.B.values).all())
 
     def test_sort_parallel_single_col(self):
-        # create `kde.parquet` file
-        ParquetGenerator.gen_kde_pq()
+        kde_pq = self.KDE_PARQUET
 
         # TODO: better parallel sort test
         def test_impl():
-            df = pd.read_parquet('kde.parquet')
+            df = pd.read_parquet(kde_pq = self.KDE_PARQUET)
             df.sort_values('points', inplace=True)
             res = df.points.values
             return res
@@ -604,12 +621,11 @@ class TestDataFrame(unittest.TestCase):
             hpat.hiframes.sort.MIN_SAMPLES = save_min_samples
 
     def test_sort_parallel(self):
-        # create `kde.parquet` file
-        ParquetGenerator.gen_kde_pq()
+        kde_pq = self.KDE_PARQUET
 
         # TODO: better parallel sort test
         def test_impl():
-            df = pd.read_parquet('kde.parquet')
+            df = pd.read_parquet(kde_pq)
             df['A'] = df.points.astype(np.float64)
             df.sort_values('points', inplace=True)
             res = df.A.values

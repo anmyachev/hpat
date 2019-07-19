@@ -9,11 +9,52 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
     count_parfor_OneDs, count_array_OneDs, dist_IR_contains, get_rank,
     get_start_end)
 
+import os
 
-kde_file = 'kde.parquet'
+from .gen_test_data import (
+    GENERATED_DATA_PATH, gen_lr, gen_group, gen_data1_csv,
+    gen_data_infer1_csv, gen_data_date1_csv, ParquetGenerator)
 
 
 class TestIO(unittest.TestCase):
+
+    KDE_PARQUET = os.path.join(GENERATED_DATA_PATH, 'kde.parquet')
+    EXAMPLE_PARQUET = os.path.join(GENERATED_DATA_PATH, 'example.parquet')
+    EXAMPLE2_PARQUET = os.path.join(GENERATED_DATA_PATH, 'example2.parquet')
+    PANDAS_DT_PARQUET = os.path.join(GENERATED_DATA_PATH, 'pandas_dt.parquet')
+    SPARK_DT_PARQUET = os.path.join(GENERATED_DATA_PATH, 'spark_dt.parquet')
+    LR_HDF5 = os.path.join(GENERATED_DATA_PATH, 'lr.hdf5')
+    GROUP_HDF5 = os.path.join(GENERATED_DATA_PATH, 'test_group_read.hdf5')
+    DATA1_CSV = os.path.join(GENERATED_DATA_PATH, 'csv_data1.csv')
+    DATA_INFER1_CSV = os.path.join(GENERATED_DATA_PATH, 'csv_data_infer1.csv')
+    DATA_DATE1_CSV = os.path.join(GENERATED_DATA_PATH, 'csv_data_date1.csv')
+
+    @classmethod
+    def setUpClass(cls):
+        ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
+        ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
+        ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE2_PARQUET,
+                                                    row_group_size=2)
+        ParquetGenerator.gen_datetime64_parquet(cls.PANDAS_DT_PARQUET)
+        ParquetGenerator.generate_spark_parquet(cls.SPARK_DT_PARQUET)
+        gen_lr(cls.LR_HDF5, N=101, D=10)
+        gen_group(cls.GROUP_HDF5, N=101)
+        gen_data1_csv(cls.DATA1_CSV)
+        gen_data_infer1_csv(cls.DATA_INFER1_CSV)
+        gen_data_date1_csv(cls.DATA_DATE1_CSV)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(cls.KDE_PARQUET)
+        os.remove(cls.EXAMPLE_PARQUET)
+        os.remove(cls.EXAMPLE2_PARQUET)
+        os.remove(cls.PANDAS_DT_PARQUET)
+        os.remove(cls.SPARK_DT_PARQUET)
+        os.remove(cls.LR_HDF5)
+        os.remove(cls.GROUP_HDF5)
+        os.remove(cls.DATA1_CSV)
+        os.remove(cls.DATA_INFER1_CSV)
+        os.remove(cls.DATA_DATE1_CSV)
 
     def setUp(self):
         if get_rank() == 0:
@@ -51,8 +92,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_h5_read_seq(self):
+        lr_hdf5 = self.LR_HDF5
+
         def test_impl():
-            f = h5py.File("lr.hdf5", "r")
+            f = h5py.File(lr_hdf5, "r")
             X = f['points'][:]
             f.close()
             return X
@@ -63,9 +106,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_h5_read_const_infer_seq(self):
+        lr_hdf5 = self.LR_HDF5
+
         def test_impl():
-            p = 'lr'
-            f = h5py.File(p + ".hdf5", "r")
+            f = h5py.File(lr_hdf5, "r")
             s = 'po'
             X = f[s + 'ints'][:]
             f.close()
@@ -77,8 +121,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_h5_read_parallel(self):
+        lr_hdf5 = self.LR_HDF5
+
         def test_impl():
-            f = h5py.File("lr.hdf5", "r")
+            f = h5py.File(lr_hdf5, "r")
             X = f['points'][:]
             Y = f['responses'][:]
             f.close()
@@ -137,8 +183,10 @@ class TestIO(unittest.TestCase):
                    '2282 != 5050\n'
                    'NUMA_PES=3 build')
     def test_h5_read_group(self):
+        group_hdf5 = self.GROUP_HDF5
+
         def test_impl():
-            f = h5py.File("test_group_read.hdf5", "r")
+            f = h5py.File(group_hdf5, "r")
             g1 = f['G']
             X = g1['data'][:]
             f.close()
@@ -150,8 +198,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_h5_file_keys(self):
+        group_hdf5 = self.GROUP_HDF5
+
         def test_impl():
-            f = h5py.File("test_group_read.hdf5", "r")
+            f = h5py.File(group_hdf5, "r")
             s = 0
             for gname in f.keys():
                 X = f[gname]['data'][:]
@@ -168,8 +218,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_h5_group_keys(self):
+        group_hdf5 = self.GROUP_HDF5
+
         def test_impl():
-            f = h5py.File("test_group_read.hdf5", "r")
+            f = h5py.File(group_hdf5, "r")
             g1 = f['G']
             s = 0
             for dname in g1.keys():
@@ -199,8 +251,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pq_read(self):
+        kde_pq = self.KDE_PARQUET
+
         def test_impl():
-            t = pq.read_table('kde.parquet')
+            t = pq.read_table(kde_pq)
             df = t.to_pandas()
             X = df['points']
             return X.sum()
@@ -216,8 +270,10 @@ class TestIO(unittest.TestCase):
                    'DESIRED: 58.34405719897534\n'
                    'NUMA_PES=3 build')
     def test_pq_read_global_str1(self):
+        kde_pq = self.KDE_PARQUET
+
         def test_impl():
-            df = pd.read_parquet(kde_file)
+            df = pd.read_parquet(kde_pq)
             X = df['points']
             return X.sum()
 
@@ -229,9 +285,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pq_read_freevar_str1(self):
-        kde_file2 = 'kde.parquet'
+        kde_pq = self.KDE_PARQUET
+
         def test_impl():
-            df = pd.read_parquet(kde_file2)
+            df = pd.read_parquet(kde_pq)
             X = df['points']
             return X.sum()
 
@@ -243,8 +300,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pd_read_parquet(self):
+        kde_pq = self.KDE_PARQUET
+
         def test_impl():
-            df = pd.read_parquet('kde.parquet')
+            df = pd.read_parquet(kde_pq)
             X = df['points']
             return X.sum()
 
@@ -256,8 +315,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pq_str(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             A = df.two.values=='foo'
             return A.sum()
 
@@ -269,8 +330,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pq_str_with_nan_seq(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             A = df.five.values=='foo'
             return A
 
@@ -280,8 +343,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pq_str_with_nan_par(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             A = df.five.values=='foo'
             return A.sum()
 
@@ -296,8 +361,10 @@ class TestIO(unittest.TestCase):
                    'DESIRED: 2\n'
                    'NUMA_PES=3 build')
     def test_pq_str_with_nan_par_multigroup(self):
+        example2_pq = self.EXAMPLE2_PARQUET
+
         def test_impl():
-            df = pq.read_table('example2.parquet').to_pandas()
+            df = pq.read_table(example2_pq).to_pandas()
             A = df.five.values=='foo'
             return A.sum()
 
@@ -309,8 +376,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pq_bool(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             return df.three.sum()
 
         hpat_func = hpat.jit(test_impl)
@@ -321,8 +390,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pq_nan(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             return df.one.sum()
 
         hpat_func = hpat.jit(test_impl)
@@ -333,8 +404,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_pq_float_no_nan(self):
+        example_pq = self.EXAMPLE_PARQUET
+
         def test_impl():
-            df = pq.read_table('example.parquet').to_pandas()
+            df = pq.read_table(example_pq).to_pandas()
             return df.four.sum()
 
         hpat_func = hpat.jit(test_impl)
@@ -343,24 +416,30 @@ class TestIO(unittest.TestCase):
         self.assertEqual(count_parfor_REPs(), 0)
 
     def test_pq_pandas_date(self):
+        pd_dt_pq = self.PANDAS_DT_PARQUET
+
         def test_impl():
-            df = pd.read_parquet('pandas_dt.pq')
+            df = pd.read_parquet(pd_dt_pq)
             return pd.DataFrame({'DT64': df.DT64, 'col2': df.DATE})
 
         hpat_func = hpat.jit(test_impl)
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
 
     def test_pq_spark_date(self):
+        spark_dt_pq = self.SPARK_DT_PARQUET
+
         def test_impl():
-            df = pd.read_parquet('sdf_dt.pq')
+            df = pd.read_parquet(spark_dt_pq)
             return pd.DataFrame({'DT64': df.DT64, 'col2': df.DATE})
 
         hpat_func = hpat.jit(test_impl)
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
 
     def test_csv1(self):
+        data1_csv = self.DATA1_CSV
+
         def test_impl():
-            return pd.read_csv("csv_data1.csv",
+            return pd.read_csv(data1_csv,
                 names=['A', 'B', 'C', 'D'],
                 dtype={'A':np.int, 'B':np.float, 'C':np.float, 'D':np.int},
             )
@@ -370,9 +449,11 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_csv_keys1(self):
+        data1_csv = self.DATA1_CSV
+
         def test_impl():
             dtype = {'A':np.int, 'B':np.float, 'C':np.float, 'D':np.int}
-            return pd.read_csv("csv_data1.csv",
+            return pd.read_csv(data1_csv,
                 names=dtype.keys(),
                 dtype=dtype,
             )
@@ -380,9 +461,11 @@ class TestIO(unittest.TestCase):
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
 
     def test_csv_const_dtype1(self):
+        data1_csv = self.DATA1_CSV
+
         def test_impl():
             dtype = {'A': 'int', 'B': 'float64', 'C': 'float', 'D': 'int64'}
-            return pd.read_csv("csv_data1.csv",
+            return pd.read_csv(data1_csv,
                 names=dtype.keys(),
                 dtype=dtype,
             )
@@ -390,8 +473,10 @@ class TestIO(unittest.TestCase):
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
 
     def test_csv_infer1(self):
+        data_indef1_csv = self.DATA_INFER1_CSV
+
         def test_impl():
-            return pd.read_csv("csv_data_infer1.csv")
+            return pd.read_csv(data_indef1_csv)
 
         hpat_func = hpat.jit(test_impl)
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
@@ -399,16 +484,20 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_csv_infer_parallel1(self):
+        data_indef1_csv = self.DATA_INFER1_CSV
+
         def test_impl():
-            df = pd.read_csv("csv_data_infer1.csv")
+            df = pd.read_csv(data_indef1_csv)
             return df.A.sum(), df.B.sum(), df.C.sum(), df.D.sum()
 
         hpat_func = hpat.jit(test_impl)
         self.assertEqual(hpat_func(), test_impl())
 
     def test_csv_skip1(self):
+        data1_csv = self.DATA1_CSV
+
         def test_impl():
-            return pd.read_csv("csv_data1.csv",
+            return pd.read_csv(data1_csv,
                 names=['A', 'B', 'C', 'D'],
                 dtype={'A':np.int, 'B':np.float, 'C':np.float, 'D':np.int},
                 skiprows=2,
@@ -419,8 +508,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_csv_infer_skip1(self):
+        data_indef1_csv = self.DATA_INFER1_CSV
+
         def test_impl():
-            return pd.read_csv("csv_data_infer1.csv", skiprows=2)
+            return pd.read_csv(data_indef1_csv, skiprows=2)
 
         hpat_func = hpat.jit(test_impl)
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
@@ -428,8 +519,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_csv_infer_skip_parallel1(self):
+        data_indef1_csv = self.DATA_INFER1_CSV
+
         def test_impl():
-            df = pd.read_csv("csv_data_infer1.csv", skiprows=2,
+            df = pd.read_csv(data_indef1_csv, skiprows=2,
                 names=['A', 'B', 'C', 'D'])
             return df.A.sum(), df.B.sum(), df.C.sum(), df.D.sum()
 
@@ -439,8 +532,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_csv_rm_dead1(self):
+        data1_csv = self.DATA1_CSV
+
         def test_impl():
-            df = pd.read_csv("csv_data1.csv",
+            df = pd.read_csv(data1_csv,
                 names=['A', 'B', 'C', 'D'],
                 dtype={'A':np.int, 'B':np.float, 'C':np.float, 'D':np.int},)
             return df.B.values
@@ -448,8 +543,10 @@ class TestIO(unittest.TestCase):
         np.testing.assert_array_equal(hpat_func(), test_impl())
 
     def test_csv_date1(self):
+        data_date1_csv = self.DATA_DATE1_CSV
+
         def test_impl():
-            return pd.read_csv("csv_data_date1.csv",
+            return pd.read_csv(data_date1_csv,
                 names=['A', 'B', 'C', 'D'],
                 dtype={'A':np.int, 'B':np.float, 'C':str, 'D':np.int},
                 parse_dates=[2])
@@ -457,8 +554,10 @@ class TestIO(unittest.TestCase):
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
 
     def test_csv_str1(self):
+        data_date1_csv = self.DATA_DATE1_CSV
+
         def test_impl():
-            return pd.read_csv("csv_data_date1.csv",
+            return pd.read_csv(data_date1_csv,
                 names=['A', 'B', 'C', 'D'],
                 dtype={'A':np.int, 'B':np.float, 'C':str, 'D':np.int})
         hpat_func = hpat.jit(test_impl)
@@ -467,8 +566,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_csv_parallel1(self):
+        data1_csv = self.DATA1_CSV
+
         def test_impl():
-            df = pd.read_csv("csv_data1.csv",
+            df = pd.read_csv(data1_csv,
                 names=['A', 'B', 'C', 'D'],
                 dtype={'A':np.int, 'B':np.float, 'C':np.float, 'D':np.int})
             return (df.A.sum(), df.B.sum(), df.C.sum(), df.D.sum())
@@ -478,8 +579,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_csv_str_parallel1(self):
+        data_date1_csv = self.DATA_DATE1_CSV
+
         def test_impl():
-            df = pd.read_csv("csv_data_date1.csv",
+            df = pd.read_csv(data_date1_csv,
                 names=['A', 'B', 'C', 'D'],
                 dtype={'A':np.int, 'B':np.float, 'C':str, 'D':np.int})
             return (df.A.sum(), df.B.sum(), (df.C == '1966-11-13').sum(),
@@ -490,8 +593,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_csv_usecols1(self):
+        data1_csv = self.DATA1_CSV
+
         def test_impl():
-            return pd.read_csv("csv_data1.csv",
+            return pd.read_csv(data1_csv,
                 names=['C'],
                 dtype={'C':np.float},
                 usecols=[2],

@@ -10,7 +10,12 @@ from hpat.str_arr_ext import StringArray
 from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
     count_parfor_OneDs, count_array_OneDs, dist_IR_contains, get_start_end)
 
+<<<<<<< HEAD
 from hpat.tests.gen_test_data import ParquetGenerator
+=======
+import os
+from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+>>>>>>> generated data for unittesting in 'hpat/tests/generated_data' folder now
 
 _cov_corr_series = [(pd.Series(x), pd.Series(y)) for x, y in [
     (
@@ -39,6 +44,16 @@ GLOBAL_VAL = 2
 
 
 class TestSeries(unittest.TestCase):
+
+    KDE_PARQUET = os.path.join(GENERATED_DATA_PATH, 'kde.parquet')
+
+    @classmethod
+    def setUpClass(cls):
+        ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(cls.KDE_PARQUET)
 
     @unittest.skip('AssertionError - fix needed\n'
                    '122 != 1\n'
@@ -1165,11 +1180,10 @@ class TestSeries(unittest.TestCase):
                    'y: array([0.00482 , 0.04843 , 0.05106 , 0.057625])\n'
                    'NUMA_PES=3 build')
     def test_series_nlargest_parallel1(self):
-        # create `kde.parquet` file
-        ParquetGenerator.gen_kde_pq()
-
+        kde_pq = self.KDE_PARQUET
+        #this fail ready need to do same with another files 
         def test_impl():
-            df = pq.read_table('kde.parquet').to_pandas()
+            df = pq.read_table(kde_pq).to_pandas()
             S = df.points
             return S.nlargest(4)
 
@@ -1213,11 +1227,10 @@ class TestSeries(unittest.TestCase):
                    'y: array([0.007431, 0.024095, 0.031374, 0.035724])\n'
                    'NUMA_PES=3 build')
     def test_series_nsmallest_parallel1(self):
-        # create `kde.parquet` file
-        ParquetGenerator.gen_kde_pq()
+        kde_pq = self.KDE_PARQUET
 
         def test_impl():
-            df = pq.read_table('kde.parquet').to_pandas()
+            df = pq.read_table(kde_pq).to_pandas()
             S = df.points
             return S.nsmallest(4)
 
@@ -1302,11 +1315,10 @@ class TestSeries(unittest.TestCase):
                    'nan != 0.45894510159707225\n'
                    'NUMA_PES=3 build')
     def test_series_median_parallel1(self):
-        # create `kde.parquet` file
-        ParquetGenerator.gen_kde_pq()
+        kde_pq = self.KDE_PARQUET
 
         def test_impl():
-            df = pq.read_table('kde.parquet').to_pandas()
+            df = pq.read_table(kde_pq).to_pandas()
             S = df.points
             return S.median()
 
@@ -1314,11 +1326,10 @@ class TestSeries(unittest.TestCase):
         self.assertEqual(hpat_func(), test_impl())
 
     def test_series_argsort_parallel(self):
-        # create `kde.parquet` file
-        ParquetGenerator.gen_kde_pq()
+        kde_pq = self.KDE_PARQUET
 
         def test_impl():
-            df = pq.read_table('kde.parquet').to_pandas()
+            df = pq.read_table(kde_pq).to_pandas()
             S = df.points
             return S.argsort().values
 
@@ -1370,11 +1381,10 @@ class TestSeries(unittest.TestCase):
         pd.testing.assert_series_equal(hpat_func(A, B), test_impl(A, B))
 
     def test_series_sort_values_parallel1(self):
-        # create `kde.parquet` file
-        ParquetGenerator.gen_kde_pq()
+        kde_pq = self.KDE_PARQUET
 
         def test_impl():
-            df = pq.read_table('kde.parquet').to_pandas()
+            df = pq.read_table(kde_pq).to_pandas()
             S = df.points
             return S.sort_values()
 
