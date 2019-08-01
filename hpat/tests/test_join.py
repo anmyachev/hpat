@@ -36,7 +36,7 @@ class TestJoin(unittest.TestCase):
     '''
 
     @unittest.skip('Error - fix needed\n'
-                   'NUMA_PES=3 build') 
+                   'NUMA_PES=3 build')
     def test_join1(self):
         def test_impl(n):
             df1 = pd.DataFrame({'key1': np.arange(n)+3, 'A': np.arange(n)+1.0})
