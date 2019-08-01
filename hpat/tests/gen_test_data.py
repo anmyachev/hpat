@@ -102,19 +102,6 @@ class ParquetGenerator:
         )
         df.to_parquet(file_name)
 
-    @classmethod
-    def generate_spark_parquet(cls, file_name='spark_dt.parquet'):
-        import os
-        import shutil
-        import tarfile
-
-        if os.path.exists('sdf_dt.pq'):
-            shutil.rmtree('sdf_dt.pq')
-
-        sdf_dt_archive = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sdf_dt.pq.bz2')
-        tar = tarfile.open(sdf_dt_archive, "r:bz2")
-        tar.extractall('.')
-        tar.close()
 
     @classmethod
     def gen_asof1_parquet(cls, file_name='asof1.pq'):
@@ -131,6 +118,21 @@ class ParquetGenerator:
             ['2017-01-01', '2017-01-14', '2017-01-16', '2017-02-23', '2017-02-23',
             '2017-02-25']), 'A': [2,3,7,8,9,10]})
         df.to_parquet(file_name)
+
+
+def extract_spark_data():
+    import os
+    import tarfile
+
+    spark_parquet_file = 'sdf_dt.pq'
+
+    sdf_dt_archive = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  spark_parquet_file + '.bz2')
+    tar = tarfile.open(sdf_dt_archive, "r:bz2")
+    tar.extractall(GENERATED_DATA_PATH)
+    tar.close()
+
+    return os.path.join(GENERATED_DATA_PATH, spark_parquet_file)
 
 
 def gen_lr(file_name="lr.hdf5", N=101, D=10):

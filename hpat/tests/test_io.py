@@ -10,24 +10,68 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
     get_start_end)
 
 import os
-
+import shutil
 from hpat.tests.gen_test_data import (
     GENERATED_DATA_PATH, gen_lr, gen_group, gen_data1_csv,
-    gen_data_infer1_csv, gen_data_date1_csv, ParquetGenerator)
+    gen_data_infer1_csv, gen_data_date1_csv,
+    ParquetGenerator, extract_spark_data)
+
+
+def create_filename_safe(folder, file_name):
+    return os.path.join(folder, file_name + str(get_rank()))
+
+
+def gen_h5_filter_test_data(filename='h5_test_filter.h5'):
+    n = 11
+    size = (n, 13, 21, 3)
+    A = np.random.randint(0, 120, size, np.uint8)
+    f = h5py.File(filename, "w")
+    f.create_dataset('test', data=A)
+    f.close()
+
+
+def gen_cat1_csv_data(filename='csv_data_cat1.csv'):
+    data = ("2,B,SA\n"
+            "3,A,SBC\n"
+            "4,C,S123\n"
+            "5,B,BCD\n")
+
+    with open(filename, "w") as f:
+        f.write(data)
+
+
+def gen_single_dtype1(filename='csv_data_dtype1.csv'):
+    # test_csv_single_dtype1
+    data = ("2,4.1\n"
+            "3,3.4\n"
+            "4,1.3\n"
+            "5,1.1\n")
+
+    with open(filename, "w") as f:
+        f.write(data)
+
+
+def gen_np_io1_data(filename='np_file1.dat'):
+    n = 111
+    A = np.random.ranf(n)
+    A.tofile(filename)
 
 
 class TestIO(unittest.TestCase):
 
-    KDE_PARQUET = os.path.join(GENERATED_DATA_PATH, 'kde.parquet')
-    EXAMPLE_PARQUET = os.path.join(GENERATED_DATA_PATH, 'example.parquet')
-    EXAMPLE2_PARQUET = os.path.join(GENERATED_DATA_PATH, 'example2.parquet')
-    PANDAS_DT_PARQUET = os.path.join(GENERATED_DATA_PATH, 'pandas_dt.parquet')
-    SPARK_DT_PARQUET = os.path.join(GENERATED_DATA_PATH, 'spark_dt.parquet')
-    LR_HDF5 = os.path.join(GENERATED_DATA_PATH, 'lr.hdf5')
-    GROUP_HDF5 = os.path.join(GENERATED_DATA_PATH, 'test_group_read.hdf5')
-    DATA1_CSV = os.path.join(GENERATED_DATA_PATH, 'csv_data1.csv')
-    DATA_INFER1_CSV = os.path.join(GENERATED_DATA_PATH, 'csv_data_infer1.csv')
-    DATA_DATE1_CSV = os.path.join(GENERATED_DATA_PATH, 'csv_data_date1.csv')
+    KDE_PARQUET = create_filename_safe(GENERATED_DATA_PATH, 'kde.parquet')
+    EXAMPLE_PARQUET = create_filename_safe(GENERATED_DATA_PATH, 'example.parquet')
+    EXAMPLE2_PARQUET = create_filename_safe(GENERATED_DATA_PATH, 'example2.parquet')
+    PANDAS_DT_PARQUET = create_filename_safe(GENERATED_DATA_PATH, 'pandas_dt.parquet')
+    LR_HDF5 = create_filename_safe(GENERATED_DATA_PATH, 'lr.hdf5')
+    GROUP_HDF5 = create_filename_safe(GENERATED_DATA_PATH, 'test_group_read.hdf5')
+    DATA1_CSV = create_filename_safe(GENERATED_DATA_PATH, 'csv_data1.csv')
+    DATA_INFER1_CSV = create_filename_safe(GENERATED_DATA_PATH, 'csv_data_infer1.csv')
+    DATA_DATE1_CSV = create_filename_safe(GENERATED_DATA_PATH, 'csv_data_date1.csv')
+    FILTER_DATA_HDF5 = create_filename_safe(GENERATED_DATA_PATH, 'h5_test_filter.h5')
+    CAT1_CSV = create_filename_safe(GENERATED_DATA_PATH, 'csv_data_cat1.csv')
+    SINGLE_DTYPE1_CSV = create_filename_safe(GENERATED_DATA_PATH, 'csv_data_dtype1.csv')
+    NP_IO1_DAT = create_filename_safe(GENERATED_DATA_PATH, 'np_file1.dat')
 
     @classmethod
     def setUpClass(cls):
@@ -36,12 +80,17 @@ class TestIO(unittest.TestCase):
         ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE2_PARQUET,
                                                     row_group_size=2)
         ParquetGenerator.gen_datetime64_parquet(cls.PANDAS_DT_PARQUET)
-        ParquetGenerator.generate_spark_parquet(cls.SPARK_DT_PARQUET)
         gen_lr(cls.LR_HDF5, N=101, D=10)
         gen_group(cls.GROUP_HDF5, N=101)
         gen_data1_csv(cls.DATA1_CSV)
         gen_data_infer1_csv(cls.DATA_INFER1_CSV)
         gen_data_date1_csv(cls.DATA_DATE1_CSV)
+
+        cls.SPARK_DT_PARQUET = extract_spark_data()
+        gen_h5_filter_test_data(cls.FILTER_DATA_HDF5)
+        gen_cat1_csv_data(cls.CAT1_CSV)
+        gen_single_dtype1(cls.SINGLE_DTYPE1_CSV)
+        gen_np_io1_data(cls.NP_IO1_DAT)
 
     @classmethod
     def tearDownClass(cls):
@@ -49,45 +98,17 @@ class TestIO(unittest.TestCase):
         os.remove(cls.EXAMPLE_PARQUET)
         os.remove(cls.EXAMPLE2_PARQUET)
         os.remove(cls.PANDAS_DT_PARQUET)
-        os.remove(cls.SPARK_DT_PARQUET)
         os.remove(cls.LR_HDF5)
         os.remove(cls.GROUP_HDF5)
         os.remove(cls.DATA1_CSV)
         os.remove(cls.DATA_INFER1_CSV)
         os.remove(cls.DATA_DATE1_CSV)
 
-    def setUp(self):
-        if get_rank() == 0:
-            # h5 filter test
-            n = 11
-            size = (n, 13, 21, 3)
-            A = np.random.randint(0, 120, size, np.uint8)
-            f = h5py.File('h5_test_filter.h5', "w")
-            f.create_dataset('test', data=A)
-            f.close()
-
-            # test_csv_cat1
-            data = ("2,B,SA\n"
-                    "3,A,SBC\n"
-                    "4,C,S123\n"
-                    "5,B,BCD\n")
-
-            with open("csv_data_cat1.csv", "w") as f:
-                f.write(data)
-
-            # test_csv_single_dtype1
-            data = ("2,4.1\n"
-                    "3,3.4\n"
-                    "4,1.3\n"
-                    "5,1.1\n")
-
-            with open("csv_data_dtype1.csv", "w") as f:
-                f.write(data)
-
-            # test_np_io1
-            n = 111
-            A = np.random.ranf(n)
-            A.tofile("np_file1.dat")
+        # shutil.rmtree(cls.SPARK_DT_PARQUET)
+        os.remove(cls.FILTER_DATA_HDF5)
+        os.remove(cls.CAT1_CSV)
+        os.remove(cls.SINGLE_DTYPE1_CSV)
+        os.remove(cls.NP_IO1_DAT)
 
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
