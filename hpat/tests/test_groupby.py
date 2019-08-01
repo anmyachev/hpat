@@ -9,6 +9,7 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
                             get_start_end)
 import os
 from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+from hpat.tests.test_utils import get_rank
 
 
 _pivot_df1 = pd.DataFrame({"A": ["foo", "foo", "foo", "foo", "foo",
@@ -28,13 +29,17 @@ class TestGroupBy(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ParquetGenerator.gen_groupby_parquet(cls.GROUPBY3_PARQUET)
-        ParquetGenerator.gen_pivot2_parquet(cls.PIVOT2_PARQUET)
+        if get_rank() == 0:
+            ParquetGenerator.gen_groupby_parquet(cls.GROUPBY3_PARQUET)
+            ParquetGenerator.gen_pivot2_parquet(cls.PIVOT2_PARQUET)
 
+    # needed synchronization primitives
+    '''
     @classmethod
     def tearDownClass(cls):
         os.remove(cls.GROUPBY3_PARQUET)
         os.remove(cls.PIVOT2_PARQUET)
+    '''
 
     def test_agg_seq(self):
         def test_impl(df):

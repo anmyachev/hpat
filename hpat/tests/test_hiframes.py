@@ -14,6 +14,7 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
                             get_start_end)
 import os
 from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+from hpat.tests.test_utils import get_rank
 
 
 class TestHiFrames(unittest.TestCase):
@@ -22,11 +23,15 @@ class TestHiFrames(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
+        if get_rank() == 0:
+            ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
 
+    # needed synchronization primitives
+    '''
     @classmethod
     def tearDownClass(cls):
         os.remove(cls.EXAMPLE_PARQUET)
+    '''
 
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')

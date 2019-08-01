@@ -11,6 +11,7 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
 
 import os
 from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+from hpat.tests.test_utils import get_rank
 
 
 @hpat.jit
@@ -28,11 +29,15 @@ class TestDataFrame(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
+        if get_rank() == 0:
+            ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
 
+    # needed synchronization primitives
+    '''
     @classmethod
     def tearDownClass(cls):
         os.remove(cls.KDE_PARQUET)
+    '''
 
 
     @unittest.skip('Error - fix needed\n')

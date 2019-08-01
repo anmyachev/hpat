@@ -12,6 +12,7 @@ from hpat.str_arr_ext import StringArray
 from hpat.str_ext import unicode_to_std_str, std_str_to_unicode
 import os
 from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+from hpat.tests.test_utils import get_rank
 
 
 class TestString(unittest.TestCase):
@@ -20,11 +21,15 @@ class TestString(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
+        if get_rank() == 0:
+            ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
 
+    # needed synchronization primitives
+    '''
     @classmethod
     def tearDownClass(cls):
         os.remove(cls.EXAMPLE_PARQUET)
+    '''
 
     def test_pass_return(self):
         def test_impl(_str):

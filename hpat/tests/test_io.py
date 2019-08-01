@@ -75,23 +75,26 @@ class TestIO(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
-        ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
-        ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE2_PARQUET,
-                                                    row_group_size=2)
-        ParquetGenerator.gen_datetime64_parquet(cls.PANDAS_DT_PARQUET)
-        gen_lr(cls.LR_HDF5, N=101, D=10)
-        gen_group(cls.GROUP_HDF5, N=101)
-        gen_data1_csv(cls.DATA1_CSV)
-        gen_data_infer1_csv(cls.DATA_INFER1_CSV)
-        gen_data_date1_csv(cls.DATA_DATE1_CSV)
+        if get_rank() == 0:
+            ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
+            ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE_PARQUET)
+            ParquetGenerator.gen_parquet_from_dataframe(cls.EXAMPLE2_PARQUET,
+                                                        row_group_size=2)
+            ParquetGenerator.gen_datetime64_parquet(cls.PANDAS_DT_PARQUET)
+            gen_lr(cls.LR_HDF5, N=101, D=10)
+            gen_group(cls.GROUP_HDF5, N=101)
+            gen_data1_csv(cls.DATA1_CSV)
+            gen_data_infer1_csv(cls.DATA_INFER1_CSV)
+            gen_data_date1_csv(cls.DATA_DATE1_CSV)
 
-        cls.SPARK_DT_PARQUET = extract_spark_data()
-        gen_h5_filter_test_data(cls.FILTER_DATA_HDF5)
-        gen_cat1_csv_data(cls.CAT1_CSV)
-        gen_single_dtype1(cls.SINGLE_DTYPE1_CSV)
-        gen_np_io1_data(cls.NP_IO1_DAT)
+            cls.SPARK_DT_PARQUET = extract_spark_data()
+            gen_h5_filter_test_data(cls.FILTER_DATA_HDF5)
+            gen_cat1_csv_data(cls.CAT1_CSV)
+            gen_single_dtype1(cls.SINGLE_DTYPE1_CSV)
+            gen_np_io1_data(cls.NP_IO1_DAT)
 
+    # needed synchronization primitives
+    '''
     @classmethod
     def tearDownClass(cls):
         os.remove(cls.KDE_PARQUET)
@@ -109,6 +112,7 @@ class TestIO(unittest.TestCase):
         # os.remove(cls.CAT1_CSV)
         os.remove(cls.SINGLE_DTYPE1_CSV)
         os.remove(cls.NP_IO1_DAT)
+    '''
 
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')

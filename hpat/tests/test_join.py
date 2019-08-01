@@ -13,6 +13,7 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
                             get_start_end)
 import os
 from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+from hpat.tests.test_utils import get_rank
 
 
 class TestJoin(unittest.TestCase):
@@ -22,13 +23,17 @@ class TestJoin(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ParquetGenerator.gen_asof1_parquet(cls.ASOF1_PARQUET)
-        ParquetGenerator.gen_asof2_parquet(cls.ASOF2_PARQUET)
+        if get_rank() == 0:
+            ParquetGenerator.gen_asof1_parquet(cls.ASOF1_PARQUET)
+            ParquetGenerator.gen_asof2_parquet(cls.ASOF2_PARQUET)
 
+    # needed synchronization primitives
+    '''
     @classmethod
     def tearDownClass(cls):
         os.remove(cls.ASOF1_PARQUET)
         os.remove(cls.ASOF2_PARQUET)
+    '''
 
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build') 

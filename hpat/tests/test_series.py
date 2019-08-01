@@ -12,6 +12,7 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
 
 import os
 from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
+from hpat.tests.test_utils import get_rank
 
 
 _cov_corr_series = [(pd.Series(x), pd.Series(y)) for x, y in [
@@ -46,11 +47,15 @@ class TestSeries(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
+        if get_rank() == 0:
+            ParquetGenerator.gen_kde_pq(cls.KDE_PARQUET, N=101)
 
+    # needed synchronization primitives
+    '''
     @classmethod
     def tearDownClass(cls):
         os.remove(cls.KDE_PARQUET)
+    '''
 
     @unittest.skip('AssertionError - fix needed\n'
                    '122 != 1\n'
