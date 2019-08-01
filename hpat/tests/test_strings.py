@@ -10,12 +10,8 @@ import re
 import pyarrow.parquet as pq
 from hpat.str_arr_ext import StringArray
 from hpat.str_ext import unicode_to_std_str, std_str_to_unicode
-<<<<<<< HEAD
-from hpat.tests.gen_test_data import ParquetGenerator
-=======
 import os
-from .gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
->>>>>>> generated data for unittesting in 'hpat/tests/generated_data' folder now
+from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
 
 
 class TestString(unittest.TestCase):

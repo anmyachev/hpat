@@ -9,13 +9,8 @@ import hpat
 from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
     count_parfor_OneDs, count_array_OneDs, dist_IR_contains, get_start_end)
 
-<<<<<<< HEAD
-from hpat.tests.gen_test_data import ParquetGenerator
-=======
 import os
-
-from .gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
->>>>>>> generated data for unittesting in 'hpat/tests/generated_data' folder now
+from hpat.tests.gen_test_data import GENERATED_DATA_PATH, ParquetGenerator
 
 
 @hpat.jit

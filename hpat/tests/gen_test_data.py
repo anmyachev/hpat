@@ -104,33 +104,17 @@ class ParquetGenerator:
 
     @classmethod
     def generate_spark_parquet(cls, file_name='spark_dt.parquet'):
-        from pyspark.sql import SparkSession
-        from pyspark.sql.types import (
-            StructType, StructField, DateType, TimestampType)
+        import os
+        import shutil
+        import tarfile
 
-        # test datetime64, spark dates
-        dt1 = pd.DatetimeIndex(['2017-03-03 03:23',
-                                '1990-10-23', '1993-07-02 10:33:01'])
-        df = pd.DataFrame({'DT64': dt1, 'DATE': dt1.copy()})
+        if os.path.exists('sdf_dt.pq'):
+            shutil.rmtree('sdf_dt.pq')
 
-def generate_spark_data():
-    # test datetime64, spark dates
-    dt1 = pd.DatetimeIndex(['2017-03-03 03:23',
-                            '1990-10-23', '1993-07-02 10:33:01'])
-    df = pd.DataFrame({'DT64': dt1, 'DATE': dt1.copy()})
-    df.to_parquet('pandas_dt.pq')
-
-    import os
-    import shutil
-    import tarfile
-
-    if os.path.exists('sdf_dt.pq'):
-      shutil.rmtree('sdf_dt.pq')
-
-    sdf_dt_archive = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sdf_dt.pq.bz2')
-    tar = tarfile.open(sdf_dt_archive, "r:bz2")
-    tar.extractall('.')
-    tar.close()
+        sdf_dt_archive = os.path.join(os.path.dirname(os.path.abspath(__file__)),'sdf_dt.pq.bz2')
+        tar = tarfile.open(sdf_dt_archive, "r:bz2")
+        tar.extractall('.')
+        tar.close()
 
     @classmethod
     def gen_asof1_parquet(cls, file_name='asof1.pq'):

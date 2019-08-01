@@ -11,7 +11,7 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
 
 import os
 
-from .gen_test_data import (
+from hpat.tests.gen_test_data import (
     GENERATED_DATA_PATH, gen_lr, gen_group, gen_data1_csv,
     gen_data_infer1_csv, gen_data_date1_csv, ParquetGenerator)
 
