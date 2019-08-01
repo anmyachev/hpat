@@ -604,7 +604,7 @@ class TestDataFrame(unittest.TestCase):
 
         # TODO: better parallel sort test
         def test_impl():
-            df = pd.read_parquet(kde_pq = self.KDE_PARQUET)
+            df = pd.read_parquet(kde_pq)
             df.sort_values('points', inplace=True)
             res = df.points.values
             return res
