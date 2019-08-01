@@ -18,7 +18,7 @@ from hpat.tests.gen_test_data import (
 
 
 def create_filename_safe(folder, file_name):
-    return os.path.join(folder, file_name + str(get_rank()))
+    return os.path.join(folder, file_name)
 
 
 def gen_h5_filter_test_data(filename='h5_test_filter.h5'):
@@ -106,7 +106,7 @@ class TestIO(unittest.TestCase):
 
         # shutil.rmtree(cls.SPARK_DT_PARQUET)
         os.remove(cls.FILTER_DATA_HDF5)
-        os.remove(cls.CAT1_CSV)
+        # os.remove(cls.CAT1_CSV)
         os.remove(cls.SINGLE_DTYPE1_CSV)
         os.remove(cls.NP_IO1_DAT)
 
@@ -257,8 +257,10 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_h5_filter(self):
+        data_hdf5 = self.FILTER_DATA_HDF5
+
         def test_impl():
-            f = h5py.File("h5_test_filter.h5", "r")
+            f = h5py.File(data_hdf5, "r")
             b = np.arange(11) % 3 == 0
             X = f['test'][b,:,:,:]
             f.close()
@@ -626,10 +628,12 @@ class TestIO(unittest.TestCase):
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
 
     def test_csv_cat1(self):
+        cat1_csv = self.CAT1_CSV
+
         def test_impl():
             ct_dtype = CategoricalDtype(['A', 'B', 'C'])
             dtypes = {'C1':np.int, 'C2': ct_dtype, 'C3':str}
-            df = pd.read_csv("csv_data_cat1.csv",
+            df = pd.read_csv(cat1_csv,
                 names=['C1', 'C2', 'C3'],
                 dtype=dtypes,
             )
@@ -639,9 +643,11 @@ class TestIO(unittest.TestCase):
             hpat_func(), test_impl(), check_names=False)
 
     def test_csv_cat2(self):
+        cat1_csv = self.CAT1_CSV
+
         def test_impl():
             ct_dtype = CategoricalDtype(['A', 'B', 'C', 'D'])
-            df = pd.read_csv("csv_data_cat1.csv",
+            df = pd.read_csv(cat1_csv,
                 names=['C1', 'C2', 'C3'],
                 dtype={'C1':np.int, 'C2': ct_dtype, 'C3':str},
             )
@@ -650,8 +656,10 @@ class TestIO(unittest.TestCase):
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
 
     def test_csv_single_dtype1(self):
+        single_dtype1_csv = self.SINGLE_DTYPE1_CSV
+
         def test_impl():
-            df = pd.read_csv("csv_data_dtype1.csv",
+            df = pd.read_csv(single_dtype1_csv,
                 names=['C1', 'C2'],
                 dtype=np.float64,
             )
@@ -697,8 +705,10 @@ class TestIO(unittest.TestCase):
                 pd.read_csv(hp_fname), pd.read_csv(pd_fname))
 
     def test_np_io1(self):
+        np_io1_dat = self.NP_IO1_DAT
+
         def test_impl():
-            A = np.fromfile("np_file1.dat", np.float64)
+            A = np.fromfile(np_io1_dat, np.float64)
             return A
 
         hpat_func = hpat.jit(test_impl)
@@ -707,9 +717,11 @@ class TestIO(unittest.TestCase):
     @unittest.skip('Error - fix needed\n'
                    'NUMA_PES=3 build')
     def test_np_io2(self):
+        np_io1_dat = self.NP_IO1_DAT
+
         # parallel version
         def test_impl():
-            A = np.fromfile("np_file1.dat", np.float64)
+            A = np.fromfile(np_io1_dat, np.float64)
             return A.sum()
 
         hpat_func = hpat.jit(test_impl)
